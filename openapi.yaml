@@ -1,0 +1,86 @@
+openapi: "3.1.0"
+info:
+  title: "Inscripciones UIDE"
+  version: "2.0.0"
+  license:
+    name: "MIT"
+    identifier: "MIT"
+servers:
+  - url: http://127.0.0.1:3000
+    description: "Servidor local"
+security:
+  - apiKeyAuth: []
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+paths:
+  /v2/incripciones:
+    post:
+      tags:
+        - "Inscripciones"
+      summary: "Registrar matrícula"
+      operationId: "createEnrollmentV2"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              estudianteId: "EST-2026-0142"
+              materias:
+                - "MAT-101"
+                - "FIS-201"
+              periodoId: "2026A"
+              metodo_pago: "Transferencia"
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - estudianteId
+                - materias
+                - periodoId
+                - metodo_pago
+              properties:
+                estudianteId:
+                  type: string
+                materias:
+                  type: array
+                  items:
+                    type: string
+                periodoId:
+                  type: string
+                metodo_pago:
+                  type: string
+                  enum:
+                    - Efectivo
+                    - Transferencia
+                    - Debito
+                    - Credito
+      responses:
+        "201":
+          description: "Inscripción creada correctamente"
+          content:
+            application/json:
+              example:
+                version: "v2"
+                message:
+                  estudianteId: "EST-2026-0142"
+                  materias:
+                    - "MAT-101"
+                    - "FIS-201"
+                  periodoId: "2026A"
+                  metodo_pago: "Transferencia"
+        "400":
+          description: "Solicitud inválida"
+          content:
+            application/json:
+              example:
+                error: "Campos requeridos: estudianteId, materias, periodoId, metodo_pago"
+        "401":
+          description: "API key inválida o ausente"
+          content:
+            application/json:
+              example:
+                error: "API key inválida o ausente"
