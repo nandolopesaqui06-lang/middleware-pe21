@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import type { NextFunction, Request, Response } from 'express';
-import { requestLogger } from './logger';
+import { requestLogger } from './logger.js';
 
 describe('requestLogger', () => {
   afterEach(() => {

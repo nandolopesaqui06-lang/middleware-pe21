@@ -1,15 +1,15 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import type { NextFunction, Request, Response } from 'express';
-import { requireApiKey } from './auth';
+import { requireApiKey } from './auth.js';
 
 describe('requireApiKey', () => {
   it('responde 401 cuando falta x-api-key', () => {
     const req = {
       headers: {}
-    } as Request;
+    } as unknown as Request;
 
     const json = jest.fn();
-    const status = jest.fn(() => ({ json }));
+    const status = jest.fn().mockReturnValue({ json });
     const res = {
       status,
       json
@@ -29,10 +29,10 @@ describe('requireApiKey', () => {
       headers: {
         'x-api-key': 'incorrecta'
       }
-    } as Request;
+    } as unknown as Request;
 
     const json = jest.fn();
-    const status = jest.fn(() => ({ json }));
+    const status = jest.fn().mockReturnValue({ json });
     const res = {
       status,
       json
@@ -52,10 +52,10 @@ describe('requireApiKey', () => {
       headers: {
         'x-api-key': 'secreto-demo'
       }
-    } as Request;
+    } as unknown as Request;
 
     const json = jest.fn();
-    const status = jest.fn(() => ({ json }));
+    const status = jest.fn().mockReturnValue({ json });
     const res = {
       status,
       json

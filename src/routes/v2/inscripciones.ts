@@ -1,32 +1,35 @@
-import { type Request, type Response, Router } from "express";
-// public router = new Router
+import { Router, type Request, type Response } from 'express';
+
 const router = Router();
-const METODO_PAGO = ['Efectivo', 'Transferencia', 'Debito', 'Credito']
+const METODOS_PAGO = ['debit', 'credit', 'scholarship'] as const;
 
-//Post: estudianteId, materias (Arreglo), periodoId, metodo de pago - Registrar matricula
-router.post('/', (req: Request, res: Response, next)  => {
+router.post('/', (req: Request, res: Response) => {
+  const { estudianteId, materias, periodoId, payment_method, metodo_pago } = req.body;
+  const metodoPago = payment_method ?? metodo_pago;
 
-    const {estudianteId, materias, periodoId, metodo_pago} = req.body;
-    if(!estudianteId || !materias.length || !periodoId || !metodo_pago){
-        console.error('No existe el id del estudiante')
-    res.status(400).json(
-        {
-            error: 'Campos requeridos: estudianteId, materias, periodoId, metodo_pago'
-        }
-    )
-}
-    if(METODO_PAGO.includes(metodo_pago)){
-        console.error('El metodo de pago insertado no es valido');
-        res.status(400).json({
-            error: 'El metodo de pago insertado debe ser: efectivo, debito, credito o transferencia'
-        })
+  if (!estudianteId || !Array.isArray(materias) || materias.length === 0 || !periodoId || !metodoPago) {
+    res.status(400).json({
+      error: 'Campos requeridos: estudianteId, materias, periodoId, payment_method'
+    });
+    return;
+  }
+
+  if (!METODOS_PAGO.includes(metodoPago as (typeof METODOS_PAGO)[number])) {
+    res.status(400).json({
+      error: 'payment_method invalido. Valores: debit, credit, scholarship'
+    });
+    return;
+  }
+
+  res.status(201).json({
+    version: 'v2',
+    message: {
+      estudianteId,
+      materias,
+      periodoId,
+      payment_method: metodoPago
     }
-    res.status(201).json({
-        version: 'v2',
-        message: {
-            estudianteId, materias, periodoId, metodo_pago
-        }
-    })
-})
+  });
+});
 
 export default router;
