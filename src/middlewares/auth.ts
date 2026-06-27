@@ -1,62 +1,47 @@
-import { type Request, type Response, type NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+﻿import type { Request, Response, NextFunction } from 'express';
+import { createHmac, timingSafeEqual } from 'crypto';
 
-// Limpiamos las comillas extras que puedan venir del archivo .env
-const JWT_SECRET = (process.env.JWT_SECRET ?? '').replace(/['"]/g, '');
-const JWT_ALGORITHM = 'HS256';
+const JWT_SECRET = process.env.JWT_SECRET ?? '';
 
-interface CustomJwtPayload extends jwt.JwtPayload {
-  sub?: string;
-  scope?: string;
+function base64urlDecode(str: string): string {
+  return Buffer.from(str.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
 }
 
-export function requireJwt(req: Request, res: Response, next: NextFunction): void {
+export function requireJwt(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers['authorization'] ?? '';
-  const token = typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7).trim()
-    : '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
 
-  if (!token) {
-    res.status(401).json({ error: 'Token malformado o ausente' });
-    return;
+  if (!token) return res.status(401).json({ error: 'Token ausente' });
+
+  const parts = token.split('.');
+  if (parts.length !== 3) return res.status(401).json({ error: 'Token malformado' });
+
+  const headerB64 = parts[0] ?? '';
+  const payloadB64 = parts[1] ?? '';
+  const sigB64 = parts[2] ?? '';
+
+  // Verificar que el algoritmo declarado es HS256 (nunca confiar en alg)
+  const header = JSON.parse(base64urlDecode(headerB64));
+  if (header.alg !== 'HS256') return res.status(401).json({ error: 'Algoritmo no permitido' });
+
+  // Recalcular firma y comparar con tiempo constante
+  const expectedSig = createHmac('sha256', JWT_SECRET)
+    .update(`${headerB64}.${payloadB64}`)
+    .digest('base64url');
+
+  const sigBuf = Buffer.from(sigB64);
+  const expectedBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) {
+    return res.status(401).json({ error: 'Firma invalida' });
   }
 
-  if (!JWT_SECRET) {
-    console.error('JWT_SECRET no configurado en las variables de entorno');
-    res.status(500).json({ error: 'Configuración de seguridad inválida' });
-    return;
-  }
+  const claims = JSON.parse(base64urlDecode(payloadB64));
 
-  try {
-    // jwt.verify se encarga de revisar la firma, el algoritmo y si está expirado todo en un solo paso
-    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: [JWT_ALGORITHM] }) as CustomJwtPayload;
+  // Validar claims obligatorios
+  const now = Math.floor(Date.now() / 1000);
+  if (claims.exp && claims.exp < now) return res.status(401).json({ error: 'Token expirado' });
+  if (!claims.sub) return res.status(401).json({ error: 'Claim sub ausente' });
 
-    // Inyectamos el usuario en la petición
-    (req as Request & { user?: { sub: string; scope: string } }).user = {
-      sub: decoded.sub ?? 'anonymous', // Evita que falle si Postman no envía "sub"
-      scope: decoded.scope ?? ''
-    };
-
-    next();
-  } catch (error: any) {
-    // Personalizamos el error según lo que haya fallado
-    if (error.name === 'TokenExpiredError') {
-      res.status(401).json({ error: 'Token expirado' });
-    } else if (error.name === 'JsonWebTokenError') {
-      res.status(401).json({ error: 'Firma inválida o token corrupto' });
-    } else {
-      res.status(401).json({ error: 'Token inválido' });
-    }
-  }
-}
-
-export function requireApiKey(req: Request, res: Response, next: NextFunction): void {
-  const key = req.headers['x-api-key'];
-
-  if (key !== 'secreto-demo') {
-    res.status(401).json({ error: 'API key inválida o ausente' });
-    return;
-  }
-
+  (req as Request & { user?: unknown }).user = { sub: claims.sub, scope: claims.scope ?? '' };
   next();
 }

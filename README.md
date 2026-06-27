@@ -23,6 +23,7 @@ node .\generate-token.mjs
 ```
 
 4. Envía la petición a la ruta protegida usando el header `Authorization: Bearer <token>`.
+![Token válido](docs/screenshots/PE23_prueba_tokem_valido_201.png)
 
 5. Si el token no es válido o no coincide con el secreto del servidor, la respuesta será un error 401 o 500 según el caso.
 

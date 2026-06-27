@@ -1,0 +1,18 @@
+﻿
+> api_diego@1.0.0 dev
+> nodemon --exec tsx src/index.ts
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `tsx src/index.ts`[39m
+Servidor en puerto 3000
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+POST / -> 201 (2ms)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/index.ts`[39m
+Servidor en puerto 3000
+POST / -> 201 (21ms)
+POST /v2/inscripciones%20 -> 401 (4ms)
